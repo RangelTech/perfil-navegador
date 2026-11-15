@@ -22,7 +22,7 @@ TIPOS = {"credenciais", "codigo_2fa", "codigo_email", "aprovar_no_celular", "esc
 class Passo:
     tipo: str
     mensagem: str = ""
-    campos: list[dict] = field(default_factory=list)     # [{"id": "codigo", "tipo": "texto|senha", "rotulo": "..."}]
+    campos: list[dict] = field(default_factory=list)     # [{"id": "codigo", "tipo": "texto|senha|clique", "rotulo": "..."}]; clique = "x,y" no print
     opcoes: list[str] = field(default_factory=list)      # escolha
     imagem: str = ""                                     # data:image/png;base64 (QR, captcha)
     erro: str = ""                                       # senha_errada | conta_bloqueada | prazo | rede_fora | desconhecido

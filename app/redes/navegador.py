@@ -115,3 +115,31 @@ def guardar_falha(page, nome: str) -> None:
 
 def tem_cookie(ctx, nome: str, dominio: str) -> bool:
     return any(c["name"] == nome and dominio in c["domain"] and c.get("value") for c in ctx.cookies())
+
+
+TEXTO_DESAFIO = "text=/Confirme que é humano|Verify you are human|Executando verificação de segurança|Performing security verification/i"
+
+
+def em_desafio(page) -> bool:
+    try:
+        return page.locator(TEXTO_DESAFIO).count() > 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def resolver_com_a_pessoa(page, canal, tentativas: int = 3) -> None:
+    """Passo `captcha`: manda o print da tela; a pessoa toca onde precisa ("x,y" em pixels do print) e o servidor clica ali."""
+    from app.passos import Passo
+    for _ in range(tentativas):
+        if not em_desafio(page):
+            return
+        v = canal.pedir(Passo("captcha", mensagem="A rede pediu uma verificação. Toque na caixa 'Confirme que é humano' na imagem.",
+                              imagem=imagem(page), campos=[{"id": "clique", "tipo": "clique", "rotulo": "Toque na imagem"}]))
+        try:
+            x, y = (float(n) for n in v.split(",")[:2])
+        except ValueError:
+            continue
+        page.mouse.move(x - 40, y - 20)
+        page.mouse.move(x, y, steps=10)
+        page.mouse.click(x, y)
+        time.sleep(6)

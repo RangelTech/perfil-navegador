@@ -4,7 +4,7 @@ from __future__ import annotations
 import time
 
 from app.passos import Canal, ErroLogin, Passo
-from app.redes.navegador import abrir, achar, digitar, guardar_falha, pausa, tem_cookie
+from app.redes.navegador import abrir, achar, digitar, em_desafio, guardar_falha, pausa, resolver_com_a_pessoa, tem_cookie
 
 CAMPO = [{"id": "codigo", "tipo": "texto", "rotulo": "Código"}]
 
@@ -16,7 +16,11 @@ def _logado(ctx, page) -> bool:
 def login(canal: Canal, usuario: str, senha: str, proxy: str = "") -> tuple[dict, dict]:
     with abrir(proxy) as (ctx, page):
         page.goto("https://www.linkedin.com/login?trk=guest_homepage", wait_until="domcontentloaded")
-        u = achar(page, ["#username", "input[name=session_key]", "input[type=email]", "input[autocomplete=username]"], 45)
+        CAMPOS_USUARIO = ["#username", "input[name=session_key]", "input[type=email]", "input[autocomplete=username]"]
+        u = achar(page, CAMPOS_USUARIO, 45)
+        if not u and em_desafio(page):
+            resolver_com_a_pessoa(page, canal)
+            u = achar(page, CAMPOS_USUARIO, 20)
         if not u:
             guardar_falha(page, "linkedin-login")
             raise ErroLogin("rede_fora")
