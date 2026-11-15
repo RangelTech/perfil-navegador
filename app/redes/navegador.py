@@ -55,10 +55,37 @@ def digitar(loc, texto: str) -> None:
     loc.press_sequentially(texto, delay=random.randint(45, 110))
 
 
+def desafio_cloudflare(page) -> bool:
+    """Se a página mostra o Turnstile ("Confirme que é humano"), clica na caixa como uma pessoa. True se clicou."""
+    for f in page.frames:
+        if "challenges.cloudflare.com" in (f.url or ""):
+            try:
+                caixa = f.frame_element().bounding_box()
+            except Exception:  # noqa: BLE001
+                return False
+            if not caixa or caixa["width"] < 30:
+                return False
+            x = caixa["x"] + 28 + random.uniform(-3, 3)
+            y = caixa["y"] + caixa["height"] / 2 + random.uniform(-3, 3)
+            page.mouse.move(x - random.uniform(60, 120), y - random.uniform(20, 40))
+            page.mouse.move(x, y, steps=random.randint(8, 16))
+            pausa(0.2, 0.6)
+            page.mouse.click(x, y)
+            time.sleep(5)
+            return True
+    return False
+
+
 def achar(page, seletores: list[str], prazo_s: float = 10):
-    """Primeiro seletor visível (aceita textos em português e inglês). None se nenhum aparecer no prazo."""
+    """Primeiro seletor visível (aceita textos em português e inglês). None se nenhum aparecer no prazo.
+    Se no caminho aparecer o desafio do Cloudflare, clica nele e continua esperando."""
     fim = time.time() + prazo_s
+    cliques = 0
     while time.time() < fim:
+        if cliques < 3 and prazo_s >= 5 and desafio_cloudflare(page):
+            cliques += 1
+            fim = max(fim, time.time() + 15)
+            continue
         for s in seletores:
             try:
                 todos = page.locator(s)

@@ -16,7 +16,7 @@ def _logado(ctx, page) -> bool:
 def login(canal: Canal, usuario: str, senha: str, proxy: str = "") -> tuple[dict, dict]:
     with abrir(proxy) as (ctx, page):
         page.goto("https://www.linkedin.com/login?trk=guest_homepage", wait_until="domcontentloaded")
-        u = achar(page, ["#username", "input[name=session_key]", "input[type=email]", "input[autocomplete=username]"], 20)
+        u = achar(page, ["#username", "input[name=session_key]", "input[type=email]", "input[autocomplete=username]"], 45)
         if not u:
             guardar_falha(page, "linkedin-login")
             raise ErroLogin("rede_fora")
