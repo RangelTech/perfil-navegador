@@ -15,7 +15,7 @@ def conector(rede: str, simulado: bool = False):
         from app.redes import simulado as m
         return m
     if rede == "instagram":
-        from app.redes import instagram as m
+        from app.redes import instagram_web as m  # instagrapi quebrou no login em 15/11/2026 (ver instagram_web.py)
     elif rede == "linkedin":
         from app.redes import linkedin as m
     elif rede == "facebook":
