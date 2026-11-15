@@ -30,7 +30,8 @@ def _proxy(url: str) -> dict | None:
 def abrir(proxy: str = "", estado: dict | None = None):
     from playwright.sync_api import sync_playwright
     with sync_playwright() as pw:
-        b = pw.chromium.launch(headless=os.environ.get("PN_VISIVEL") != "1", proxy=_proxy(proxy),
+        # channel="chromium" = Chromium completo no modo "new headless" (o headless-shell é barrado pelo Cloudflare do LinkedIn)
+        b = pw.chromium.launch(headless=os.environ.get("PN_VISIVEL") != "1", channel="chromium", proxy=_proxy(proxy),
                                args=["--disable-blink-features=AutomationControlled", "--no-sandbox"])
         ctx = b.new_context(locale="pt-BR", timezone_id="America/Sao_Paulo", user_agent=UA, viewport={"width": 1366, "height": 900},
                             storage_state=estado or None)
