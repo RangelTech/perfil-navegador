@@ -149,7 +149,8 @@ class ErroLogin(Exception):
     MENSAGENS = {"senha_errada": "Usuário ou senha errados.", "conta_bloqueada": "A rede bloqueou a conta por segurança. Entre pelo app e libere.",
                  "codigo_errado": "Código errado.", "rede_fora": "A rede não respondeu. Tente de novo em instantes.",
                  "captcha": "A rede pediu um desafio que não dá para resolver por aqui. Tente mais tarde.",
-                 "sessao_caiu": "A rede derrubou a sessão. Conecte de novo."}
+                 "sessao_caiu": "A rede derrubou a sessão. Conecte de novo.",
+                 "limite_codigos": "O TikTok bloqueou novos códigos por excesso de tentativas. Espere 1 a 2 horas e conecte de novo, escolhendo E-mail."}
 
     def __init__(self, codigo: str, mensagem: str = ""):
         super().__init__(codigo)

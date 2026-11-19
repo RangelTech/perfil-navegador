@@ -19,7 +19,8 @@ CAMPO_CODIGO = ["input[autocomplete=one-time-code]", "input[placeholder*=código
                 "input[name*=code i]"]
 BOTAO_SEGUIR = ['internal:role=button[name=/^(enviar código|send code|enviar|send|avançar|next|verificar|verify|continuar|continue|confirmar|confirm)$/i]']
 CONFIRMAR = re.compile(r"^(avançar|next|verificar|verify|continuar|continue|confirmar|confirm|enviar|send|entrar|log in)$", re.I)
-ENVIAR_CODIGO = re.compile(r"^(enviar código|send code|obter código|get code|reenviar|resend)", re.I)
+ENVIAR_CODIGO = re.compile(r"^(enviar código|send code|obter código|get code)$", re.I)  # nunca "Reenviar": gasta tentativa
+LIMITE = re.compile(r"máximo de tentativas|tente mais tarde|too many attempts|maximum number of attempts|try again later", re.I)
 
 # Lê os clicáveis do modal de verificação (o elemento clicável mais externo de cada opção, com o texto e o centro na tela).
 JS_OPCOES = r"""() => {
@@ -91,6 +92,13 @@ def _resolver_verificacao(page, canal: Canal, estado: dict) -> None:
     "E-mail · c***l@...") e mostra como botões na nossa tela; o toque da pessoa vira clique naquele elemento. Depois envia o código
     sozinho e pede o código na nossa tela. Só se não achar nada clicável cai no print com toque."""
     from app.redes.navegador import resolver_tela_com_a_pessoa
+    try:
+        corpo = page.evaluate("() => document.body.innerText")
+    except Exception:  # noqa: BLE001
+        corpo = ""
+    if LIMITE.search(corpo or ""):
+        guardar_falha(page, "tiktok-limite")
+        raise ErroLogin("limite_codigos")
     cod = achar(page, CAMPO_CODIGO, 1)
     ops = opcoes_da_tela(page)
     if cod:
