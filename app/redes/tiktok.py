@@ -56,10 +56,34 @@ def opcoes_da_tela(page) -> list[dict]:
         return []
 
 
+JS_CLIQUE = """([x, y]) => { let e = document.elementFromPoint(x, y); const vistos = [];
+  while (e && vistos.length < 6) { vistos.push(e); e.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+    e.dispatchEvent(new MouseEvent('mouseup', {bubbles: true})); e.click(); if (e.matches('button,a,[role=button],[tabindex]')) break; e = e.parentElement; }
+  return vistos.length; }"""
+
+
+def _assinatura(page) -> str:
+    try:
+        return page.evaluate("() => document.body.innerText.slice(0, 600)")
+    except Exception:  # noqa: BLE001
+        return ""
+
+
 def _clicar(page, op: dict) -> None:
+    """Clique de mouse de verdade; se a tela não mudar, dispara o clique direto no elemento (handlers do React)."""
+    antes = _assinatura(page)
+    guardar_falha(page, "tiktok-antes-clique")
     page.mouse.move(op["x"] - 30, op["y"] - 10)
     page.mouse.move(op["x"], op["y"], steps=8)
     page.mouse.click(op["x"], op["y"])
+    time.sleep(2.5)
+    if _assinatura(page) == antes:
+        try:
+            page.evaluate(JS_CLIQUE, [op["x"], op["y"]])
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(2.5)
+    guardar_falha(page, "tiktok-depois-clique")
 
 
 def _resolver_verificacao(page, canal: Canal, estado: dict) -> None:
