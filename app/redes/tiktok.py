@@ -12,6 +12,55 @@ def _logado(ctx) -> bool:
     return tem_cookie(ctx, "sessionid", "tiktok.com")
 
 
+TEXTO_VERIFICACAO = ("text=/verifique sua identidade|confirme se é realmente você|confirme que é você|verify it.s (really )?you|"
+                     "verify your identity|verificar identidade|security verification|verificação de segurança/i")
+CAMPO_CODIGO = ["input[autocomplete=one-time-code]", "input[placeholder*=código i]", "input[placeholder*=code i]", "input[maxlength='6']",
+                "input[name*=code i]"]
+METODOS = r"/^\s*(e-?mail|sms|telefone|phone|número de telefone|phone number|mensagem de texto|text message)/i"
+BOTAO_SEGUIR = ['internal:role=button[name=/^(enviar código|send code|enviar|send|avançar|next|verificar|verify|continuar|continue|confirmar|confirm|enviar)$/i]']
+
+
+def _verificacao(page) -> bool:
+    try:
+        return page.locator(TEXTO_VERIFICACAO).count() > 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _resolver_verificacao(page, canal: Canal) -> None:
+    """Verificação de identidade depois do QR: código (e-mail/SMS), escolha do método ou, se for outro layout, a pessoa toca
+    no lugar certo do print da página (passo captcha)."""
+    from app.redes.navegador import resolver_tela_com_a_pessoa
+    cod = achar(page, CAMPO_CODIGO, 1)
+    if cod:
+        v = canal.pedir(Passo("codigo_email", mensagem="O TikTok mandou um código (e-mail ou SMS) para confirmar que é você. Digite aqui.",
+                              campos=[{"id": "codigo", "tipo": "texto", "rotulo": "Código"}]))
+        digitar(cod, v.strip())
+        pausa(0.6, 1)
+        ok = achar(page, BOTAO_SEGUIR, 4)
+        if ok:
+            ok.click()
+        pausa(3, 4)
+        return
+    try:
+        metodos = page.locator(f"internal:text={METODOS}").all()
+        nomes = [m.inner_text().strip().split("\n")[0][:60] for m in metodos if m.is_visible()]
+    except Exception:  # noqa: BLE001
+        metodos, nomes = [], []
+    if nomes:
+        esc = canal.pedir(Passo("escolha", mensagem="O TikTok quer confirmar que é você. Por onde mandar o código?", opcoes=nomes))
+        alvo = next((m for m, n in zip(metodos, nomes) if n == esc), metodos[0])
+        alvo.click()
+        pausa(1, 1.5)
+        envio = achar(page, BOTAO_SEGUIR, 3)
+        if envio:
+            envio.click()
+        pausa(3, 4)
+        return
+    resolver_tela_com_a_pessoa(page, canal, "O TikTok pediu para confirmar que é você. Toque na imagem onde precisa (ex.: no botão de verificar).")
+    pausa(3, 4)
+
+
 def login(canal: Canal, usuario: str = "", senha: str = "", proxy: str = "") -> tuple[dict, dict]:
     with abrir(proxy) as (ctx, page):
         page.goto("https://www.tiktok.com/login/qrcode", wait_until="domcontentloaded")
@@ -22,6 +71,11 @@ def login(canal: Canal, usuario: str = "", senha: str = "", proxy: str = "") -> 
                 raise TimeoutError()
             if _logado(ctx):
                 break
+            if _verificacao(page):  # depois do QR o TikTok às vezes pede "confirme que é você"
+                _resolver_verificacao(page, canal)
+                ultimo = time.time()
+                fim = max(fim, time.time() + 120)  # a verificação come tempo: dá mais prazo
+                continue
             if time.time() - ultimo > 20:  # QR se renova; manda a imagem nova a cada 20 s
                 qr = achar(page, ["canvas", "div[data-e2e=qr-code] img", "img[alt*=QR]"], 15)
                 if not qr:

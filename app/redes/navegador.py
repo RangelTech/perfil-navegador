@@ -127,6 +127,19 @@ def em_desafio(page) -> bool:
         return False
 
 
+def resolver_tela_com_a_pessoa(page, canal, mensagem: str) -> None:
+    """Uma rodada do passo `captcha` com a página inteira: a pessoa toca onde precisa e o servidor clica ali."""
+    from app.passos import Passo
+    v = canal.pedir(Passo("captcha", mensagem=mensagem, imagem=imagem(page), campos=[{"id": "clique", "tipo": "clique", "rotulo": "Toque na imagem"}]))
+    try:
+        x, y = (float(n) for n in v.split(",")[:2])
+    except ValueError:
+        return
+    page.mouse.move(x - 40, y - 20)
+    page.mouse.move(x, y, steps=10)
+    page.mouse.click(x, y)
+
+
 def resolver_com_a_pessoa(page, canal, tentativas: int = 3) -> None:
     """Passo `captcha`: manda o print da tela; a pessoa toca onde precisa ("x,y" em pixels do print) e o servidor clica ali."""
     from app.passos import Passo
