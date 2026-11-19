@@ -42,23 +42,9 @@ def _resolver_verificacao(page, canal: Canal) -> None:
             ok.click()
         pausa(3, 4)
         return
-    try:
-        metodos = page.locator(f"internal:text={METODOS}").all()
-        nomes = [m.inner_text().strip().split("\n")[0][:60] for m in metodos if m.is_visible()]
-    except Exception:  # noqa: BLE001
-        metodos, nomes = [], []
-    if nomes:
-        esc = canal.pedir(Passo("escolha", mensagem="O TikTok quer confirmar que é você. Por onde mandar o código?", opcoes=nomes))
-        alvo = next((m for m, n in zip(metodos, nomes) if n == esc), metodos[0])
-        alvo.click()
-        pausa(1, 1.5)
-        envio = achar(page, BOTAO_SEGUIR, 3)
-        if envio:
-            envio.click()
-        pausa(3, 4)
-        return
-    resolver_tela_com_a_pessoa(page, canal, "O TikTok pediu para confirmar que é você. Toque na imagem onde precisa (ex.: no botão de verificar).")
-    pausa(3, 4)
+    guardar_falha(page, "tiktok-verificacao")
+    resolver_tela_com_a_pessoa(page, canal, "O TikTok quer confirmar que é você. Esta é a tela dele: toque na opção (ex.: Telefone ou E-mail) e depois no botão de enviar.")
+    pausa(2.5, 3)
 
 
 def login(canal: Canal, usuario: str = "", senha: str = "", proxy: str = "") -> tuple[dict, dict]:
